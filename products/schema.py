@@ -1,4 +1,5 @@
 import graphene
+from graphene.types import decimal
 from graphene_django import DjangoObjectType
 from .models import Category, Book, Grocery
 
@@ -112,10 +113,75 @@ class DeleteCategoryMutation(graphene.Mutation):
 
         return
 
+
+class BookInput(graphene.InputObjectType):
+    title = graphene.String()
+    author = graphene.String()
+    pages = graphene.Int()
+    price = graphene.Int()
+    quantity = graphene.Int()
+    description = graphene.String()
+    status = graphene.String()
+
+
+class CreateBookMutation(graphene.Mutation):
+    class Arguments:
+        input = BookInput(required=True)
+
+    book = graphene.Field(BookType)
+
+    @classmethod
+    def mutate(cls, root, info, input):
+        book = Book()
+        book.title = input.title
+        book.author = input.author
+        book.pages = input.pages
+        book.price = input.price
+        book.quantity = input.quantity
+        book.description = input.description
+        book.status = input.status
+        book.save()
+        return CreateBookMutation(book=book)
+
+
+class UpdateBookMutation(graphene.Mutation):
+    class Arguments:
+        input = BookInput(required=True)
+        id = graphene.ID()
+
+    book = graphene.Field(BookType)
+
+    @classmethod
+    def mutate(cls, root, info, input, id):
+        book = Book.objects.get(pk=id)
+        book.name = input.name
+        book.description = input.description
+        book.price = decimal.Decimal(input.price)
+        book.quantity = input.quantity
+        book.save()
+        return UpdateBookMutation(book=book)
+
+
+class DeleteBookMutation(graphene.Mutation):
+    class Arguments:
+        id = graphene.ID()
+
+    book = graphene.Field(BookType)
+
+    @classmethod
+    def mutate(cls, root, info, id):
+        book = Book.objects.get(id=id)
+        book.delete()
+        return
+
+
 class Mutation(graphene.ObjectType):
     create_category = CreateCategoryMutation.Field()
     update_category = UpdateCategoryMutation.Field()
     delete_category = DeleteCategoryMutation.Field()
+    create_book = CreateBookMutation.Field()
+    update_book = UpdateBookMutation.Field()
+    delete_book = DeleteBookMutation.Field()
 
 
 schema = graphene.Schema(query=Query, mutation=Mutation)
